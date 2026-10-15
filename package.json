@@ -1,0 +1,31 @@
+{
+  "name": "kicks-store",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A sneaker e-commerce front-end with a 3D product turntable, animated cart and checkout, built with React and Framer Motion.",
+  "author": "Zakaria Dabella",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-three/drei": "9.117.3",
+    "@react-three/fiber": "8.17.10",
+    "framer-motion": "11.18.2",
+    "lucide-react": "0.468.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.170.0",
+    "react-router-dom": "6.28.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.17",
+    "vite": "5.4.11"
+  }
+}
