@@ -1,177 +1,272 @@
-import { lazy, Suspense, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, Check, Rotate3d, Star, Truck } from 'lucide-react'
-import { formatMAD, products } from '../data/products'
-import ShoeArt from '../components/ShoeArt'
+import { AnimatePresence, motion, useInView } from 'framer-motion'
+import { Check, ChevronDown, Star, Truck } from 'lucide-react'
+import { formatMAD, lines, products } from '../data/products'
+import ProductImage from '../components/ProductImage'
 import ProductCard from '../components/ProductCard'
 import { useCart } from '../context/CartContext'
-import { hasWebGL } from '../three/webgl'
 
-const Shoe3D = lazy(() => import('../three/Shoe3D'))
+const ease = [0.22, 1, 0.36, 1]
+const ALL_SIZES = [37, 38, 39, 40, 41, 42, 43, 44, 45, 46]
 
 const views = [
-  { id: 'side', label: 'Side', style: { rotate: -8, scale: 1, x: '0%', scaleX: 1 } },
-  { id: 'medial', label: 'Medial', style: { rotate: 6, scale: 1, x: '0%', scaleX: -1 } },
-  { id: 'toe', label: 'Toe detail', style: { rotate: -4, scale: 1.9, x: '-30%', scaleX: 1 } },
-  { id: 'heel', label: 'Heel detail', style: { rotate: 4, scale: 2, x: '38%', scaleX: 1 } },
+  { id: 'crop', label: 'Detail' },
+  { id: 'full', label: 'Full frame' },
+  { id: 'close', label: 'Close-up' },
 ]
 
 const details = [
-  ['Materials', 'Engineered mesh upper, recycled-poly lining, rubber outsole with 30% recycled content.'],
-  ['Fit', 'True to size. If you are between sizes, go half a size up for running models.'],
-  ['Delivery & returns', 'Delivered in 24–48 h in Casablanca and Rabat, 2–4 days elsewhere in Morocco. Free returns within 30 days.'],
+  ['Fit', 'True to size. Between sizes? Go half a size up in Run Lab models, stay true in Heritage and Court. Free exchanges on size.'],
+  ['Delivery and returns', 'Casablanca and Rabat in 24 h, two to four working days elsewhere in Morocco. Free from 1 500 MAD. Thirty days to return, in store or by courier.'],
+  ['Payment', 'Cash or card on delivery, or bank transfer. Nothing is charged until the pair is in your hands.'],
 ]
 
-export default function Product() {
+export default function ProductRoute() {
   const { id } = useParams()
   const p = products.find((x) => x.id === id)
-  const [view, setView] = useState('side')
-  const [size, setSize] = useState(null)
-  const [error, setError] = useState(false)
-  const [openDetail, setOpenDetail] = useState(0)
-  const [added, setAdded] = useState(false)
-  const [webgl] = useState(hasWebGL)
-  const artRef = useRef(null)
-  const { add } = useCart()
-
   if (!p) return <Navigate to="/" replace />
-  const v = views.find((x) => x.id === view)
-  const related = products.filter((x) => x.category === p.category && x.id !== p.id).concat(products.filter((x) => x.category !== p.category)).slice(0, 3)
+  return <Product key={p.id} p={p} />
+}
 
-  const onAdd = () => {
-    if (!size) {
-      setError(true)
-      return
-    }
-    add(p, size, artRef.current)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 1800)
+function Gallery({ p, tileRef }) {
+  const [view, setView] = useState('crop')
+  const [zoom, setZoom] = useState(false)
+  const [origin, setOrigin] = useState('50% 50%')
+
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    setOrigin(`${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`)
   }
+  const base = view === 'close' ? 1.9 : 1
+  const scale = zoom ? Math.max(2.1, base * 1.25) : base
 
   return (
-    <div className="wrap pt-24">
-      <nav className="label mb-6" aria-label="Breadcrumb">
-        <Link to="/" className="hover:text-jet">Shop</Link> / {p.category} / <span className="text-jet">{p.name}</span>
-      </nav>
-      <div className="grid gap-10 lg:grid-cols-[1.25fr_1fr]">
-        {/* gallery */}
-        <div>
-          <div className="relative aspect-[4/3.2] overflow-hidden rounded-[2rem]" style={{ background: p.colors.bg }}>
-            <span className="pointer-events-none absolute -bottom-6 left-4 select-none font-display text-[9rem] uppercase leading-none text-white/40 sm:text-[12rem]">{p.name.split(' ')[0]}</span>
-            <AnimatePresence mode="wait">
-              {view === '3d' ? (
-                <motion.div key="3d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 cursor-grab active:cursor-grabbing">
-                  <Suspense fallback={<p className="grid h-full place-items-center text-sm text-jet/50">Loading 3D view…</p>}>
-                    <Shoe3D colors={p.colors} podium="#F2F0EA" distance={10} />
-                  </Suspense>
-                </motion.div>
-              ) : (
-                <motion.div key="2d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 grid place-items-center">
-                  <motion.div ref={artRef} animate={v.style} transition={{ type: 'spring', stiffness: 120, damping: 18 }} className="w-4/5">
-                    <ShoeArt colors={p.colors} className="w-full" />
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {p.tag && <span className="absolute left-5 top-5 rounded-full bg-jet px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-paper">{p.tag}</span>}
-          </div>
-          <div className="scrollbar-none mt-4 flex gap-3 overflow-x-auto pb-1" role="tablist" aria-label="Product views">
-            {views.map((x) => (
-              <button key={x.id} role="tab" aria-selected={view === x.id} aria-label={x.label} onClick={() => setView(x.id)} className="relative h-20 w-24 shrink-0 overflow-hidden rounded-2xl sm:w-28" style={{ background: p.colors.bg }}>
-                <motion.div animate={x.style} className="grid h-full place-items-center p-2" transition={{ duration: 0 }}>
-                  <ShoeArt colors={p.colors} className="w-full" shadow={false} />
-                </motion.div>
-                {view === x.id && <motion.span layoutId="thumb-ring" className="absolute inset-0 rounded-2xl border-[3px] border-jet" />}
-              </button>
-            ))}
-            {webgl && (
-              <button role="tab" aria-selected={view === '3d'} onClick={() => setView('3d')} className="relative grid h-20 w-24 shrink-0 place-items-center rounded-2xl bg-jet text-paper sm:w-28">
-                <span className="flex flex-col items-center gap-1 text-[11px] font-semibold uppercase tracking-wider"><Rotate3d size={20} /> 360° view</span>
-                {view === '3d' && <motion.span layoutId="thumb-ring" className="absolute inset-0 rounded-2xl border-[3px] border-volt" />}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* info */}
-        <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.3 } } }} className="lg:pt-4">
-          <motion.p variants={rise} className="label">{p.line} · {p.category}</motion.p>
-          <motion.h1 variants={rise} className="mt-2 font-display text-6xl uppercase leading-[0.9] sm:text-7xl">{p.name}</motion.h1>
-          <motion.div variants={rise} className="mt-4 flex items-center gap-4">
-            <p className="tnum text-2xl font-semibold">{formatMAD(p.price)}</p>
-            <span className="flex items-center gap-1 text-sm text-jet/60"><Star size={14} className="fill-volt text-volt" /> {p.rating} · {p.reviews} reviews</span>
-          </motion.div>
-          <motion.p variants={rise} className="mt-5 leading-relaxed text-jet/70">{p.description}</motion.p>
-
-          <motion.div variants={rise} className="mt-8">
-            <div className="flex items-baseline justify-between">
-              <p className="text-sm font-semibold uppercase tracking-wider">Select size (EU)</p>
-              <AnimatePresence>
-                {error && !size && <motion.p initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-sm font-medium text-volt" role="alert">Please pick a size</motion.p>}
-              </AnimatePresence>
-            </div>
-            <motion.div animate={error && !size ? { x: [0, -8, 8, -4, 4, 0] } : {}} transition={{ duration: 0.4 }} className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6" role="radiogroup" aria-label="Size">
-              {[37, 38, 39, 40, 41, 42, 43, 44, 45, 46].map((s) => {
-                const available = p.sizes.includes(s)
-                const selected = size === s
-                return (
-                  <motion.button
-                    key={s}
-                    role="radio"
-                    aria-checked={selected}
-                    disabled={!available}
-                    whileTap={available ? { scale: 0.9 } : {}}
-                    onClick={() => { setSize(s); setError(false) }}
-                    className={`relative h-12 rounded-xl border text-sm font-semibold transition-colors ${available ? (selected ? 'border-jet text-paper' : 'border-jet/15 hover:border-jet') : 'cursor-not-allowed border-jet/5 text-jet/25 line-through'}`}
-                  >
-                    {selected && <motion.span layoutId="size-pill" className="absolute inset-0 rounded-[10px] bg-jet" transition={{ type: 'spring', stiffness: 500, damping: 34 }} />}
-                    <span className="relative">{s}</span>
-                  </motion.button>
-                )
-              })}
-            </motion.div>
-          </motion.div>
-
-          <motion.div variants={rise} className="mt-6">
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={onAdd} className="btn-volt relative w-full overflow-hidden py-4 text-base">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span key={added ? 'done' : 'add'} initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -24, opacity: 0 }} className="flex items-center gap-2">
-                  {added ? (<><Check size={18} /> Added to bag</>) : (<>Add to bag · {formatMAD(p.price)}</>)}
-                </motion.span>
-              </AnimatePresence>
-            </motion.button>
-            <p className="mt-3 flex items-center gap-2 text-sm text-jet/60"><Truck size={16} /> Free delivery from 1 500 MAD · Cash on delivery available</p>
-          </motion.div>
-
-          <motion.ul variants={rise} className="mt-8 divide-y divide-jet/10 border-y border-jet/10">
-            {details.map(([title, body], i) => (
-              <li key={title}>
-                <button onClick={() => setOpenDetail(openDetail === i ? -1 : i)} aria-expanded={openDetail === i} className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold uppercase tracking-wider">
-                  {title}
-                  <motion.span animate={{ rotate: openDetail === i ? 180 : 0 }}><ChevronDown size={18} /></motion.span>
-                </button>
-                <AnimatePresence initial={false}>
-                  {openDetail === i && (
-                    <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden pb-4 text-sm leading-relaxed text-jet/70">
-                      {body}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </li>
-            ))}
-          </motion.ul>
-        </motion.div>
+    <div>
+      <motion.div
+        ref={tileRef}
+        layoutId={`photo-${p.id}`}
+        transition={{ duration: 0.6, ease }}
+        className="relative aspect-[5/4] cursor-zoom-in overflow-hidden bg-tile"
+        onPointerEnter={(e) => e.pointerType === 'mouse' && setZoom(true)}
+        onPointerLeave={() => setZoom(false)}
+        onPointerMove={onMove}
+      >
+        <ProductImage
+          p={p}
+          eager
+          fit={view === 'full' ? 'contain' : 'cover'}
+          sizes="(min-width: 1024px) 58vw, 100vw"
+          style={{ transform: `scale(${scale})`, transformOrigin: zoom ? origin : view === 'close' ? '30% 55%' : '50% 50%' }}
+          className="transition-transform duration-300 ease-out"
+        />
+        {p.tag && <span className={`pointer-events-none absolute left-4 top-4 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${p.tag === 'Limited' ? 'bg-accent text-white' : 'bg-canvas text-ink'}`}>{p.tag}</span>}
+        <span className="pointer-events-none absolute bottom-4 right-4 hidden bg-canvas px-2 py-1 text-[11px] text-soft [@media(hover:hover)]:block">Hover to zoom</span>
+      </motion.div>
+      <div className="mt-2 grid grid-cols-3 gap-2" role="tablist" aria-label="Photo views">
+        {views.map((v) => (
+          <button
+            key={v.id}
+            role="tab"
+            aria-selected={view === v.id}
+            onClick={() => setView(v.id)}
+            className={`group relative aspect-[5/3] overflow-hidden bg-tile outline-offset-2 ${view === v.id ? '' : 'opacity-70 hover:opacity-100'}`}
+          >
+            <ProductImage
+              p={p}
+              fit={v.id === 'full' ? 'contain' : 'cover'}
+              sizes="20vw"
+              style={v.id === 'close' ? { transform: 'scale(1.9)', transformOrigin: '30% 55%' } : undefined}
+            />
+            <span className="absolute bottom-1.5 left-1.5 bg-canvas px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]">{v.label}</span>
+            {view === v.id && <motion.span layoutId="view-line" className="absolute inset-x-0 bottom-0 h-[3px] bg-ink" transition={{ duration: 0.3, ease }} />}
+          </button>
+        ))}
       </div>
-
-      <section className="mt-24">
-        <h2 className="font-display text-5xl uppercase">You may also like</h2>
-        <ul className="mt-8 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-          {related.map((r) => <ProductCard key={r.id} p={r} />)}
-        </ul>
-      </section>
     </div>
   )
 }
 
-const rise = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } }
+function Product({ p }) {
+  const [size, setSize] = useState(null)
+  const [error, setError] = useState(false)
+  const [openDetail, setOpenDetail] = useState(-1)
+  const [added, setAdded] = useState(false)
+  const tileRef = useRef(null)
+  const sizesRef = useRef(null)
+  const buyRef = useRef(null)
+  const buyInView = useInView(buyRef, { margin: '0px 0px -40px 0px' })
+  const { add, setOpen } = useCart()
+
+  const related = products
+    .filter((x) => x.category === p.category && x.id !== p.id)
+    .concat(products.filter((x) => x.category !== p.category))
+    .slice(0, 4)
+
+  const onAdd = () => {
+    if (!size) {
+      setError(true)
+      sizesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    add(p, size, tileRef.current)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
+
+  const cta = (extra = '') => (
+    <button onClick={onAdd} className={`btn-accent relative w-full overflow-hidden ${extra}`}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span key={added ? 'done' : 'add'} initial={{ y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -18, opacity: 0 }} transition={{ duration: 0.2 }} className="flex items-center gap-2">
+          {added ? <><Check size={18} /> Added, EU {size}</> : size ? <>Add to bag · EU {size}</> : <>Add to bag</>}
+        </motion.span>
+      </AnimatePresence>
+    </button>
+  )
+
+  return (
+    <div className="pb-24 pt-24 lg:pb-0">
+      <div className="wrap pt-4 sm:pt-6">
+        <nav className="text-[12px] text-soft" aria-label="Breadcrumb">
+          <ol className="flex flex-wrap items-center gap-1.5">
+            <li><Link to="/" className="hover:text-ink">Home</Link></li>
+            <li aria-hidden="true">/</li>
+            <li><Link to={`/?cat=${p.category}#shop`} className="hover:text-ink">{p.category}</Link></li>
+            <li aria-hidden="true">/</li>
+            <li aria-current="page" className="text-ink">{p.name}</li>
+          </ol>
+        </nav>
+
+        <div className="mt-4 grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-12 xl:gap-20">
+          <Gallery p={p} tileRef={tileRef} />
+
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } } }}>
+              <motion.p variants={rise} className="label">{p.line} · {p.category}</motion.p>
+              <motion.h1 variants={rise} className="display mt-3 text-[clamp(2.75rem,5vw,4.75rem)]">{p.name}</motion.h1>
+              <motion.div variants={rise} className="mt-4 flex flex-wrap items-baseline justify-between gap-3">
+                <p className="tnum text-xl font-semibold">{formatMAD(p.price)}</p>
+                <a href="#reviews" className="flex items-center gap-1.5 text-sm text-soft hover:text-ink">
+                  <Star size={14} className="fill-ink text-ink" /> {p.rating} <span className="underline underline-offset-2">({p.reviews} reviews)</span>
+                </a>
+              </motion.div>
+              <motion.p variants={rise} className="mt-2 text-sm text-soft">Colour: <span className="text-ink">{p.colorway}</span></motion.p>
+
+              <motion.div variants={rise} ref={sizesRef} className="mt-8 scroll-mt-32">
+                <div className="flex items-baseline justify-between">
+                  <p id="size-label" className="text-sm font-semibold">Size, EU</p>
+                  <AnimatePresence mode="wait">
+                    {error && !size ? (
+                      <motion.p key="err" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm font-medium text-accent" role="alert">Choose a size first</motion.p>
+                    ) : (
+                      <motion.p key="fit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[13px] text-soft">Fits true to size</motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <motion.div
+                  animate={error && !size ? { x: [0, -6, 6, -3, 3, 0] } : { x: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className={`mt-3 grid grid-cols-5 gap-px border bg-ink/10 ${error && !size ? 'border-accent' : 'border-ink/10'}`}
+                  role="radiogroup"
+                  aria-labelledby="size-label"
+                >
+                  {ALL_SIZES.map((s) => {
+                    const available = p.sizes.includes(s)
+                    const selected = size === s
+                    return (
+                      <button
+                        key={s}
+                        role="radio"
+                        aria-checked={selected}
+                        aria-label={`EU ${s}${available ? '' : ', sold out'}`}
+                        disabled={!available}
+                        onClick={() => { setSize(s); setError(false) }}
+                        className={`tnum relative h-12 text-sm font-medium transition-colors ${available ? (selected ? 'bg-ink text-canvas' : 'bg-canvas hover:bg-tile') : 'cursor-not-allowed bg-canvas text-soft/60 line-through'}`}
+                      >
+                        {s}
+                      </button>
+                    )
+                  })}
+                </motion.div>
+              </motion.div>
+
+              <motion.div variants={rise} ref={buyRef} className="mt-4">
+                {cta()}
+                <button onClick={() => setOpen(true)} className="btn-line mt-2 w-full">View bag</button>
+                <p className="mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-soft">
+                  <Truck size={16} className="mt-0.5 shrink-0 text-ink" />
+                  Order before 16:00 for next-day delivery in Casablanca. Cash or card on delivery.
+                </p>
+              </motion.div>
+
+              <motion.p variants={rise} className="mt-8 leading-relaxed text-soft">{p.description}</motion.p>
+
+              <motion.ul variants={rise} className="mt-6 border-t border-ink/10">
+                {details.map(([title, body], i) => (
+                  <li key={title} className="border-b border-ink/10">
+                    <button onClick={() => setOpenDetail(openDetail === i ? -1 : i)} aria-expanded={openDetail === i} className="flex min-h-[52px] w-full items-center justify-between text-left text-sm font-semibold">
+                      {title}
+                      <ChevronDown size={18} className={`transition-transform duration-300 ${openDetail === i ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {openDetail === i && (
+                        <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease }} className="overflow-hidden pb-4 text-sm leading-relaxed text-soft">
+                          {body}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </li>
+                ))}
+              </motion.ul>
+            </motion.div>
+          </div>
+        </div>
+
+        <section id="reviews" className="mt-28 grid scroll-mt-28 gap-8 border-t border-ink/15 pt-10 lg:grid-cols-12" aria-labelledby="line-title">
+          <div className="lg:col-span-5">
+            <p className="label">The {p.line} line</p>
+            <h2 id="line-title" className="display mt-3 text-[clamp(2.2rem,4.5vw,4rem)]">{lines[p.category].blurb}</h2>
+          </div>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-10 lg:col-span-6 lg:col-start-7">
+            <div>
+              <p className="display tnum text-[clamp(3rem,6vw,5.5rem)]">{p.rating}</p>
+              <p className="text-sm text-soft">Average from {p.reviews} verified buyers</p>
+            </div>
+            <p className="max-w-xs text-sm leading-relaxed text-soft">“Ordered on Monday, the courier called from Maarif on Tuesday morning. Paid cash at the door, fit was spot on.” Youssef, Casablanca</p>
+          </div>
+        </section>
+
+        <section className="mt-24" aria-labelledby="related-title">
+          <h2 id="related-title" className="display text-[clamp(2rem,4vw,3.5rem)]">Pairs well with</h2>
+          <ul className="mt-8 grid grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-3 lg:grid-cols-4">
+            {related.map((r) => <ProductCard key={r.id} p={r} shared sizes="(min-width: 1024px) 25vw, 50vw" />)}
+          </ul>
+        </section>
+      </div>
+
+      {/* sticky add-to-bag on small screens, shown once the main button scrolls away */}
+      <AnimatePresence>
+        {!buyInView && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ duration: 0.35, ease }}
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 bg-canvas/95 backdrop-blur-md lg:hidden"
+          >
+            <div className="wrap flex items-center gap-3 py-3">
+              <div className="h-12 w-12 shrink-0 overflow-hidden bg-tile"><ProductImage p={p} sizes="48px" /></div>
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="truncate font-semibold">{p.name}</p>
+                <p className="tnum text-soft">{formatMAD(p.price)}</p>
+              </div>
+              <div className="w-44 shrink-0">{cta('px-3')}</div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const rise = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } }

@@ -3,21 +3,30 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-paper font-sans text-jet antialiased; }
-  ::selection { @apply bg-volt text-white; }
-  :focus-visible { @apply outline-none ring-2 ring-volt ring-offset-2 ring-offset-paper; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-canvas font-sans text-ink antialiased; overflow-x: clip; }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  ::selection { @apply bg-accent text-white; }
+  :focus-visible { @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas; }
+  .on-dark :focus-visible { @apply ring-accent-hi ring-offset-ink; }
 }
 
 @layer components {
-  .wrap { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold uppercase tracking-wider transition-colors; }
-  .btn-dark { @apply btn bg-jet text-paper hover:bg-graphite; }
-  .btn-volt { @apply btn bg-volt text-white hover:bg-[#E8411A]; }
-  .btn-line { @apply btn border border-jet/20 hover:border-jet; }
-  .label { @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-jet/50; }
-  .field { @apply w-full rounded-xl border border-jet/15 bg-white px-4 py-3 text-sm placeholder:text-jet/35 focus:border-jet focus:outline-none; }
+  .wrap { @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10; }
+  .display { @apply font-display font-extrabold uppercase leading-[0.9] tracking-tightest; font-stretch: 88%; }
+  .btn { @apply inline-flex min-h-[48px] items-center justify-center gap-2 px-6 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors duration-200; }
+  .btn-ink { @apply btn bg-ink text-canvas hover:bg-accent; }
+  .btn-accent { @apply btn bg-accent text-white hover:bg-ink; }
+  .btn-line { @apply btn border border-ink/25 hover:border-ink; }
+  .label { @apply text-[11px] font-medium uppercase tracking-[0.14em] text-soft; }
+  .field { @apply min-h-[48px] w-full border border-ink/20 bg-white px-4 py-3 text-sm placeholder:text-soft/70 focus:border-ink focus:outline-none; }
   .tnum { font-variant-numeric: tabular-nums; }
 }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

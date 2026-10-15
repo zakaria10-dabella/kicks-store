@@ -2,41 +2,79 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
-import ShoeArt from './ShoeArt'
+import ProductImage from './ProductImage'
 import { formatMAD } from '../data/products'
 import { useCart } from '../context/CartContext'
 
-export default function ProductCard({ p }) {
+/**
+ * shared: give the photo a layoutId so it morphs into the product page hero.
+ * Only one card per product on screen may be shared.
+ */
+export default function ProductCard({ p, shared = false, as = 'li', sizes, className = '' }) {
   const { add } = useCart()
-  const art = useRef(null)
+  const tile = useRef(null)
+  const Tag = as === 'li' ? motion.li : motion.div
   const defaultSize = p.sizes[Math.floor(p.sizes.length / 2)]
+
   return (
-    <motion.li layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: 'spring', stiffness: 260, damping: 28 }} className="group">
-      <Link to={`/product/${p.id}`} className="block">
-        <motion.div whileHover="hover" initial="rest" animate="rest" className="relative aspect-[4/3.4] overflow-hidden rounded-3xl" style={{ background: p.colors.bg }}>
-          <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center font-display text-[7rem] uppercase leading-none text-white/40 sm:text-[8rem]">{p.category.slice(0, 3)}</span>
-          {p.tag && <span className="absolute left-4 top-4 rounded-full bg-jet px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-paper">{p.tag}</span>}
-          <motion.div ref={art} variants={{ rest: { rotate: -8, y: 0, scale: 1 }, hover: { rotate: -18, y: -14, scale: 1.06 } }} transition={{ type: 'spring', stiffness: 260, damping: 18 }} className="absolute inset-x-6 top-1/2 -mt-[30%]">
-            <ShoeArt colors={p.colors} className="w-full" />
+    <Tag
+      layout={as === 'li' ? 'position' : undefined}
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={`group relative ${className}`}
+    >
+      <div ref={tile} className="relative">
+        <Link to={`/product/${p.id}`} className="block" aria-label={`${p.name}, ${formatMAD(p.price)}`}>
+          <motion.div
+            layoutId={shared ? `photo-${p.id}` : undefined}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="relative aspect-square overflow-hidden bg-tile"
+          >
+            <ProductImage p={p} sizes={sizes} className="transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
           </motion.div>
-        </motion.div>
-      </Link>
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="label">{p.line} · {p.category}</p>
-          <Link to={`/product/${p.id}`} className="mt-1 block text-lg font-semibold hover:underline">{p.name}</Link>
-          <p className="tnum text-sm text-jet/70">{formatMAD(p.price)}</p>
+        </Link>
+        {p.tag && (
+          <span className={`pointer-events-none absolute left-3 top-3 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${p.tag === 'Limited' ? 'bg-accent text-white' : 'bg-canvas text-ink'}`}>
+            {p.tag}
+          </span>
+        )}
+
+        {/* quick add: sizes on hover / keyboard focus (pointer devices), plus button on touch */}
+        <div className="absolute inset-x-2 bottom-2 hidden translate-y-2 bg-canvas p-2 opacity-0 transition duration-300 ease-out group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:block">
+          <p className="px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-soft">Quick add, EU size</p>
+          <div className="mt-1 flex flex-wrap gap-0.5">
+            {p.sizes.map((s) => (
+              <button
+                key={s}
+                onClick={() => add(p, s, tile.current)}
+                aria-label={`Add ${p.name} in EU ${s} to bag`}
+                className="tnum h-9 min-w-[2.5rem] flex-1 text-[13px] font-medium hover:bg-ink hover:text-canvas"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.1, rotate: 90 }}
-          whileTap={{ scale: 0.85 }}
-          onClick={() => add(p, defaultSize, art.current)}
-          aria-label={`Quick add ${p.name}, size ${defaultSize}`}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-jet text-paper hover:bg-volt"
+        <button
+          onClick={() => add(p, defaultSize, tile.current)}
+          aria-label={`Add ${p.name}, EU ${defaultSize}, to bag`}
+          className="absolute bottom-2 right-2 grid h-11 w-11 place-items-center bg-canvas text-ink [@media(hover:hover)]:hidden"
         >
           <Plus size={18} />
-        </motion.button>
+        </button>
       </div>
-    </motion.li>
+
+      <div className="mt-3 flex items-start justify-between gap-3 text-[13px] sm:text-sm">
+        <div className="min-w-0">
+          <Link to={`/product/${p.id}`} className="font-semibold hover:underline" tabIndex={-1} aria-hidden="true">
+            {p.name}
+          </Link>
+          <p className="truncate text-soft">{p.colorway}</p>
+        </div>
+        <p className="tnum shrink-0 font-medium">{formatMAD(p.price)}</p>
+      </div>
+    </Tag>
   )
 }

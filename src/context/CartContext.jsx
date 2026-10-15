@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { products } from '../data/products'
-import ShoeArt from '../components/ShoeArt'
+import ProductImage from '../components/ProductImage'
 
 const CartContext = createContext(null)
 export const useCart = () => useContext(CartContext)
@@ -77,14 +77,16 @@ export function CartProvider({ children }) {
                 className="pointer-events-none fixed z-[100]"
                 style={{ left: f.from.left, top: f.from.top, width: f.from.width, height: f.from.height }}
                 initial={{ x: 0, y: 0, scale: 1, rotate: 0, opacity: 1 }}
-                animate={{ x: [0, dx * 0.35, dx], y: [0, dy * 0.2 - 120, dy], scale: [1, 0.7, 0.08], rotate: [0, -12, -40], opacity: [1, 1, 0.4] }}
-                transition={{ duration: 0.85, times: [0, 0.45, 1], ease: [0.6, 0, 0.4, 1] }}
+                animate={{ x: [0, dx * 0.4, dx], y: [0, dy * 0.25 - 60, dy], scale: [1, 0.55, 0.06], opacity: [1, 1, 0.3] }}
+                transition={{ duration: 0.75, times: [0, 0.45, 1], ease: [0.65, 0, 0.35, 1] }}
                 onAnimationComplete={() => {
                   setFlights((list) => list.filter((x) => x.key !== f.key))
                   commit(f.product.id, f.size)
                 }}
               >
-                <ShoeArt colors={f.product.colors} className="h-full w-full drop-shadow-2xl" shadow={false} />
+                <div className="h-full w-full overflow-hidden bg-tile shadow-2xl">
+                  <ProductImage p={f.product} eager />
+                </div>
               </motion.div>
             )
           })}

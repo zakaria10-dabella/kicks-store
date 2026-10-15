@@ -1,22 +1,44 @@
 # KICKS — Sneaker Store
 
-> A bold, editorial sneaker e-commerce front-end for a Casablanca concept store, with a drag-to-rotate 3D sneaker, an add-to-cart animation that flies into the bag, and a four-step checkout.
+> An editorial sneaker e-commerce front-end for a concept store on Boulevard d’Anfa, Casablanca: real product photography, a filterable rack, a product page with hover zoom and a shared-element transition from the grid, a slide-over bag and a four-step checkout with cash on delivery.
 
 ![KICKS desktop screenshot](docs/screenshot.png)
 
 <p align="center"><img src="docs/mobile.png" alt="KICKS on mobile" width="300" /></p>
 
-## Features
+Live demo: deploy on Vercel
 
-- **3D product turntable** in the hero, built with React Three Fiber from code only: the upper is a lofted surface (cross-sections swept along a foot-shaped planform that follows the SVG profile), the sole is an extruded, tapered profile, and the stripe and heel tab are surface patches. Drag to rotate (`PresentationControls`), switch colourways and the 3D shoe recolours instantly. Lazy-loaded, DPR capped at 2, camera adapts to portrait screens, SVG fallback without WebGL.
-- **Editorial hero**: oversized Anton headline whose two lines drift apart with scroll (`useScroll` + `useTransform`), a background that cross-fades to each featured colourway, and magnetic CTAs.
-- **Product grid** with animated category tabs (`layoutId`), sorting, layout-animated re-ordering, and cards whose shoe lifts and tilts on hover.
-- **Add-to-cart flight**: the shoe artwork is cloned and flies along an arc into the bag icon, which bounces when it lands; the badge count pops in.
-- **Product page**: gallery with side, medial, toe and heel views (spring-animated framing of one SVG), a 360° tab that loads the 3D model, a size picker with a sliding selection, shake + message if no size is chosen, accordion details and related products.
-- **Cart drawer**: spring slide-over with quantity steppers (rolling numbers), remove, free-shipping rule (from 1 500 MAD), totals in MAD and an animated empty state. Cart persists in `localStorage`.
-- **Checkout stepper**: Shipping, Delivery, Payment, Review with direction-aware slide transitions (`AnimatePresence` + `custom`), validation for Moroccan phone numbers, cash or card on delivery, a live summary and an animated confirmation.
-- **Route transitions** with a volt wipe panel, and a header that hides on scroll down and returns on scroll up.
-- Responsive from 375px; honours `prefers-reduced-motion` (the flight animation is skipped entirely).
+## The redesign
+
+The first version used illustrated SVG sneakers and a procedural Three.js shoe. This version is art-directed like a streetwear retailer (think Kith or END.): an off-white base, near-black type, one cobalt accent and big photography.
+
+- **Real photography only.** Every product uses a real photograph from Wikimedia Commons (`public/photos/<id>.jpg`). Cards crop to a square around each photo's focal point; the product page also offers a full-frame view on a neutral tile and a close-up. Images are lazy-loaded with intrinsic sizes, so nothing shifts as they load. The hero is loaded eagerly with `fetchpriority="high"`.
+- **Seven different section layouts on the home page:**
+  1. A hero with oversized type layered over a full-bleed photo that scales with scroll, plus a floating "Just landed" card with its own parallax.
+  2. An asymmetric photo bento for the four lines (Run Lab, Heritage, Court, Board).
+  3. A pinned, scroll-driven horizontal gallery of new arrivals (swipeable with scroll snap on touch screens).
+  4. The rack: a dense five-column grid with category tabs and sorting, using layout animations.
+  5. A full-bleed dark band with an editorial quote from a Run Lab tester.
+  6. A strip of big numbers for delivery and returns.
+  7. A sticky split for the store: a photo pinned on the left while services and opening hours scroll past.
+- **Product page.** A large photo with zoom on hover (the zoom follows the cursor), three photo views, an EU size grid with sold-out sizes struck through, an add-to-bag panel that stays in view on desktop, and an add-to-bag bar that appears on mobile once the main button scrolls away. The photo morphs from the grid card into the page through a shared framer-motion `layoutId`.
+- **Bag and checkout.** A slide-over bag with quantity steppers and a free-delivery progress bar. The four-step checkout keeps Moroccan phone validation, cash, card-on-delivery and bank-transfer options, a live summary and a confirmation screen. The cart is saved in `localStorage`, and the add-to-bag photo flies into the bag icon.
+
+## Design system
+
+| Role | Value |
+| --- | --- |
+| Canvas | `#F1F0EC` off-white |
+| Tile (image placeholder, summary) | `#E5E4E0` |
+| Ink | `#121211` near-black |
+| Secondary text | `#5E5C57` (5.9:1 on canvas) |
+| Accent | Cobalt `#2F3CF5` (6.8:1 with white text); `#8E96FF` on dark grounds |
+
+**Type.** [Archivo](https://fonts.google.com/specimen/Archivo) Variable, extra-bold, uppercase and narrowed slightly with the width axis (88%), with tight tracking for display text. [Geist](https://vercel.com/font) Variable for text, prices and UI. Both fonts are self-hosted through `@fontsource-variable`.
+
+**Motion.** Subtle and purposeful: masked line reveals in the hero, parallax driven by `useScroll` and `useTransform`, staggered reveals on scroll, layout animations when filtering, and the shared-element transition from card to product. Scroll-linked transforms are turned off under `prefers-reduced-motion`, `MotionConfig reducedMotion="user"` covers everything else, and the add-to-bag flight is skipped.
+
+**Accessibility.** Visible focus rings, 44px or larger touch targets, a skip link, labelled radio groups for sizes and views, a bag dialog that closes on Escape and returns focus when it closes, and text contrast of at least 4.5:1. Layouts are checked at 375, 768 and 1440px wide with no horizontal scroll.
 
 ## Tech stack
 
@@ -24,8 +46,6 @@
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![Framer Motion](https://img.shields.io/badge/Framer_Motion-11-0055FF?logo=framer&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
-![Three.js](https://img.shields.io/badge/Three.js-r170-000000?logo=threedotjs&logoColor=white)
-![React Three Fiber](https://img.shields.io/badge/React_Three_Fiber-8-000000?logo=react&logoColor=white)
 ![React Router](https://img.shields.io/badge/React_Router-6-CA4245?logo=reactrouter&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
@@ -38,53 +58,57 @@ npm run build    # production build in dist/
 npm run preview  # serve the production build
 ```
 
-`vercel.json` rewrites all paths to `index.html` so `/product/:id` and `/checkout` survive a refresh.
+`vercel.json` rewrites all paths to `index.html`, so `/product/:id` and `/checkout` still work after a page refresh.
 
 ## Project structure
 
 ```
 src/
 ├── components/
-│   ├── Navbar.jsx        # hide-on-scroll header, bouncing bag icon
-│   ├── CartDrawer.jsx    # slide-over cart
-│   ├── ProductCard.jsx   # hover tilt + quick add
-│   ├── ShoeArt.jsx       # recolourable SVG sneaker
-│   ├── Magnetic.jsx
-│   └── Footer.jsx
+│   ├── Navbar.jsx        # announcement bar, category links, hide-on-scroll header, mobile menu
+│   ├── CartDrawer.jsx    # slide-over bag with free-delivery progress
+│   ├── ProductCard.jsx   # square photo tile, quick add by size, shared layoutId
+│   ├── ProductImage.jsx  # one <img> for every product photo (cover / contain)
+│   └── Footer.jsx        # links, newsletter, photo credits
 ├── context/
-│   └── CartContext.jsx   # cart state, persistence, fly-to-cart layer
+│   └── CartContext.jsx   # cart state, persistence, fly-to-bag layer
 ├── pages/
-│   ├── Home.jsx          # 3D hero, ticker, shop grid
-│   ├── Product.jsx       # gallery, 360° view, size picker
-│   └── Checkout.jsx      # stepper + confirmation
-├── three/
-│   ├── Shoe3D.jsx        # procedural 3D sneaker + turntable
-│   └── webgl.js
-├── data/products.js      # 10 mock sneakers, prices in MAD
-├── App.jsx               # routes + page wipe transition
+│   ├── Home.jsx          # hero, bento, horizontal gallery, rack, story band, stats, store
+│   ├── Product.jsx       # zoom gallery, size grid, sticky add-to-bag, related pairs
+│   └── Checkout.jsx      # stepper and confirmation
+├── data/
+│   ├── products.js       # 10 sneakers, prices in MAD, photo focal points
+│   └── credits.js        # photo credits (mirrors public/photos/credits.json)
+├── App.jsx
 └── main.jsx
 ```
 
-## Design notes
+## Photo credits
 
-**Palette** — a warm paper background (`#F2F0EA`) and jet black (`#0E0E0E`) give a printed, streetwear-zine feel. A single loud "volt" orange (`#FF4D1F`) carries every action, with acid lime (`#D7FF3A`) used once, for the order total. Each product brings its own pastel tile colour, so the grid stays lively while the UI chrome stays monochrome.
+All photographs come from Wikimedia Commons. The full list, with sources, is in [`public/photos/credits.json`](public/photos/credits.json) and in the footer of the site. The product names are fictional; the photos show real shoes from various brands and are used here for demonstration only.
 
-**Typography** — [Anton](https://fonts.google.com/specimen/Anton) for condensed, poster-scale headlines (up to 13rem) and outlined counter-type, paired with [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) for UI text, prices and labels.
-
-**Motion** — loud but controlled:
-- The page wipe and the headline drift give the store a "campaign" energy; product cards use springy hover tilts.
-- The add-to-cart flight follows a three-keyframe arc with custom easing so it reads as being *thrown* into the bag; the bag responds with a squash-and-stretch bounce.
-- Checkout steps slide in the direction of travel, so going back feels like going back.
-- The 3D turntable sways between the two three-quarter views instead of spinning, so the shoe's profile always reads.
-- `MotionConfig reducedMotion="user"` plus `useReducedMotion` in the cart context.
+| File | Author | Licence | Source |
+| --- | --- | --- | --- |
+| hero.jpg | Jacek Halicki | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:2023_Adidas_Yeezy_350_V2_EF2905_(1).jpg) |
+| run-lab.jpg | JSFarman | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Brooks_Adrenaline_GTS_18.jpg) |
+| atlas-runner.jpg | Petar Milošević | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Asics_Gel-Cumulus_22.jpg) |
+| medina-low.jpg | LeDroider | CC0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:New_Balance_574.jpg) |
+| kasbah-hi.jpg | HI 622 | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Nike_air_Force_1_white_on_white.jpg) |
+| corniche-sk8.jpg | Petar Milošević | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Reebok_Royal_Glide_Ripple_Clip_shoe.jpg) |
+| sahara-trail.jpg | Petar Milošević | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Mizuno_Wave_Ibuki_2.jpg) |
+| anfa-court.jpg | LeDroider | CC0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:New_Balance_480.jpg) |
+| derb-dunk.jpg | Xanor | CC0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Air_Force_1.JPG) |
+| souk-slip.jpg | LeDroider | CC0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:New_Balance_2002R.jpg) |
+| tempo-x.jpg | Petar Milošević | CC BY-SA 4.0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:Brooks_Ghost_14_GTX.jpg) |
+| rabat-retro.jpg | LeDroider | CC0 | [Wikimedia](https://commons.wikimedia.org/wiki/File:New_Balance_1906R.jpg) |
 
 ## Author
 
-**Zakaria Dabella** — UI/UX designer & web developer based in Casablanca, Morocco.
+**Zakaria Dabella**, UI/UX designer and web developer based in Casablanca, Morocco.
 
 - Portfolio: [zakaria-dabella-portfolio.vercel.app](https://zakaria-dabella-portfolio.vercel.app/)
 - GitHub: [@zakaria10-dabella](https://github.com/zakaria10-dabella)
 
 ## License
 
-[MIT](LICENSE) © 2026 Zakaria Dabella
+Code: [MIT](LICENSE) © 2026 Zakaria Dabella. Photographs: their own licences, listed above.
